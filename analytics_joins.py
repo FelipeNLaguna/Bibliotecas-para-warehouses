@@ -1,56 +1,53 @@
+import os
+import sys
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import broadcast
+from pyspark.sql.functions import broadcast, col, concat, lit
+
+# 1. Resolve o aviso "Missing Python executable" forçando o uso do interpretador atual
+os.environ['PYSPARK_PYTHON'] = sys.executable
+os.environ['PYSPARK_DRIVER_PYTHON'] = sys.executable
 
 def run_distributed_parallel_joins():
     """
     O arcabouço SparkSession atua como intérprete que converte as direções lógicas declaradas 
-    em um sofisticado Gráfico Acíclico Direcionado (DAG), comandando o mapeamento intrínseco aos executores em nuvem.
+    em um sofisticado Gráfico Acíclico Direcionado (DAG).
     """
-    # A parametrização interna atinge diretamente as entranhas da alocação da CPU:
-    # 'preferSortMergeJoin' desestimula hash joins propensos à fatalidade de OOM na rede corporativa.
     spark = SparkSession.builder \
        .appName("Cloud_Scale_Analytics_Joins") \
        .config("spark.sql.join.preferSortMergeJoin", "true") \
        .config("spark.sql.autoBroadcastJoinThreshold", "10485760") \
        .getOrCreate()
 
-    # O carregamento contínuo das abstrações. Na arquitetura canônica, seriam Dataframes 
-    # instanciados apontando para blocos compactados lendo em paralelo via AWS S3 ou Google GCS.
-    data_massive = [(i, f"Client_{i}_log") for i in range(1, 10000000)]
-    data_dimensional =
+    # 2. CORREÇÃO CRÍTICA: Geração de dados massivos de forma distribuída (sem matar o Python)
+    # spark.range() cria os dados diretamente nos executores da JVM.
+    df_logs = spark.range(1, 10000000) \
+        .withColumnRenamed("id", "user_id") \
+        .withColumn("session_metrics", concat(lit("Client_"), col("user_id"), lit("_log"))) \
+        .repartition(200)
 
-    # A invocação 'repartition(200)' assegura formalmente a granularidade paralela 
-    # exigindo que os ciclos matemáticos ocorram fragmentados nos processadores das máquinas remotas.
-    df_logs = spark.createDataFrame(data_massive, ["user_id", "session_metrics"]).repartition(200)
-    df_tiers = spark.createDataFrame(data_dimensional, ["user_id", "subscription_tier"])
+    df_tiers = spark.range(1, 10000000) \
+        .withColumnRenamed("id", "user_id") \
+        .withColumn("subscription_tier", concat(lit("Tier_"), (col("user_id") % 3).cast("string")))
 
     # === ALGORITMO 1: PARALELISMO ASSIMÉTRICO VIA BROADCAST HASH JOIN ===
     print("Invocando o Broadcast Hash Join Assíncrono...")
-    # O comando 'broadcast' coage fisicamente o Catalyst a despachar a coleção diminuta
-    # integralmente ao cache e memória RAM isolada de todas as instâncias escravas do cluster.
-    # O resultado confere vazão extrema, visto que a fragmentação principal cruza a tabela localmente O(1).
-    joined_via_broadcast = df_logs.join(broadcast(df_tiers), "user_id")
     
-    # Execução tardia imposta pelo conceito 'Lazy Evaluation' materializando o cálculo.
-    joined_via_broadcast.show(5)
+    joined_via_broadcast = df_logs.join(broadcast(df_tiers), "user_id")
+    joined_via_broadcast.show(5, truncate=False)
 
     # === ALGORITMO 2: DISTRIBUIÇÃO E PARALELISMO DENSO VIA SORT-MERGE JOIN ===
-    # A anulação explícita das regras do auto-broadcast garante a execução profunda da fusão ordenada.
     spark.conf.set("spark.sql.autoBroadcastJoinThreshold", "-1")
     
     print("Invocando a Orquestração Distribuída do Sort-Merge Join...")
-    # Ao ser ativado, o cluster deflagrará as frentes de Shuffle (Exchange) redistribuindo
-    # os valores correspondentes pelos IPs locais, procedido pela intensa classificação (Sort) atrelada à CPU
-    # e enfim concatenada em via serial mesclada (Merge) em cada partição isolada do espectro global.
+    
     joined_via_sort_merge = df_logs.join(df_tiers, "user_id")
+    joined_via_sort_merge.show(5, truncate=False)
     
-    joined_via_sort_merge.show(5)
-    
-    # A explicitação de '.explain()' imprime o esqueleto das conexões físicas provando o paralelismo
+    # A explicitação de '.explain()' imprime o plano de execução físico
+    print("Plano Físico do Sort-Merge Join:")
     joined_via_sort_merge.explain()
 
     spark.stop()
 
 if __name__ == "__main__":
-    # run_distributed_parallel_joins()
-    pass
+    run_distributed_parallel_joins()
