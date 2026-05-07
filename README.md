@@ -1,6 +1,6 @@
 # Bibliotecas-para-warehouses
-Resultado da minha pesquisa sobre as aplicações paralelas que rodam em warehouses e suas bibliotecas que fazem o paralelsimo acontecer(focada principalmente em empresas como Netflix, Uber e Spotify).
--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Resultado da minha pesquisa sobre as aplicações paralelas que rodam em warehouses e suas bibliotecas que fazem o paralelsimo acontecer(focada principalmente em empresas como Netflix, Uber e Spotify).   
+
 Aplicações:  
 Processamento de Vídeo(Encoding de catálogo) - FFmpeg e libvmaf  
 Criptografia em Trânsito(proteção de dados que ocorre ininterruptamente) - multiprocessing e cryptography  
