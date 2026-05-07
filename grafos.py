@@ -1,7 +1,6 @@
 import ray
-import numpy as np
 
-# A inicialização do contexto do Ray interliga transparente a máquina local
+# A inicialização do contexto do Ray interliga de forma transparente a máquina local
 # ou o notebook Jupyter aos diversos clusters massivos sob provisão do orquestrador
 ray.init(ignore_reinit_error=True)
 
@@ -24,18 +23,24 @@ class GraphPartitionActor:
         Tarefa fortemente associada ao esforço analítico de CPU. Esta etapa computa todas as 
         frações probabilísticas que esta fatia do grafo urbano transferirá aos vértices externos.
         """
-        outbound_messages =
+        # === CORREÇÃO: Inicialização da lista de mensagens de saída ===
+        outbound_messages = []
+        
         for node in self.nodes:
-            neighbors = self.adjacency_map.get(node,)
+            # === CORREÇÃO: Fallback para lista vazia caso o nó seja um "beco sem saída" (dead-end) ===
+            neighbors = self.adjacency_map.get(node, [])
+            
             if not neighbors:
                 continue
+                
             # A transferência baseia-se na centralidade (score retido / nós externos conectados)
             influence_fragment = self.pagerank_scores[node] / len(neighbors)
             for neighbor in neighbors:
                 outbound_messages.append((neighbor, influence_fragment))
+                
         return outbound_messages
 
-    def assimilate_inbound_updates(self, incoming_transfers, damping_probability=0.85, global_node_count=1000):
+    def assimilate_inbound_updates(self, incoming_transfers, damping_probability=0.85, global_node_count=4):
         """
         Este método amalgama vetores provenientes da rede assíncrona, promovendo
         a atualização global da topologia sob responsabilidade estrita deste worker.
@@ -47,6 +52,7 @@ class GraphPartitionActor:
                 
         # Integração da probabilidade de desvio randômico (fator de teletransporte associado ao PageRank)
         base_redistribution = (1.0 - damping_probability) / global_node_count
+        
         for node in self.nodes:
             # Consolidação computacional na memória de longo prazo da instância de nuvem
             self.pagerank_scores[node] = base_redistribution + (damping_probability * fresh_scores[node])
@@ -58,12 +64,14 @@ def execute_ray_distributed_graph_algorithm(iteration_cycles=5):
     Orquestra fluxos autônomos de matrizes matemáticas através das instâncias provisionadas,
     assegurando que barreiras síncronas só ocorram pontualmente nos estágios de agregação.
     """
-    # Exemplo figurativo de fragmentação dos dados em sub-regiões (Geosharding), evitando a complexidade O(V^2) global
-    nodes_region_a = 
-    edges_region_a = {1: , 2: }
+    # === CORREÇÃO: Estruturação topológica do grafo ===
+    # Nós 1 e 2 apontam para nós na Região B (e internamente)
+    nodes_region_a = [1, 2]
+    edges_region_a = {1: [3, 4], 2: [1, 3]}
     
-    nodes_region_b = 
-    edges_region_b = {3: , 4: }
+    # Nós 3 e 4 apontam de volta para a Região A (criando um ciclo para o PageRank fluir)
+    nodes_region_b = [3, 4]
+    edges_region_b = {3: [2], 4: [1, 2]}
 
     # O provisionamento '.remote()' implanta dinamicamente os contêineres na nuvem corporativa
     actor_a = GraphPartitionActor.remote(1, nodes_region_a, edges_region_a)
@@ -86,5 +94,5 @@ def execute_ray_distributed_graph_algorithm(iteration_cycles=5):
         print(f"[Iteração {cycle}] Região A {final_scores_a} | Região B {final_scores_b}")
 
 if __name__ == "__main__":
-    # execute_ray_distributed_graph_algorithm()
-    pass
+    # === CORREÇÃO: Descomentado para invocar a execução ===
+    execute_ray_distributed_graph_algorithm()
