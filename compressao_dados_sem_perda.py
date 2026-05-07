@@ -26,7 +26,9 @@ def orchestrate_distributed_zstd_pipeline(mock_file_path):
     # Divisão puramente estocástica para simular chunks massivos (blocos físicos de 50MB) 
     # mantendo a granulação matemática otimizada dentro dos buffers da CPU (L2/L3 caches).
     chunk_physical_size = 50 * 1024 * 1024  
-    data_segments =
+    
+    # === CORREÇÃO: Instanciação da lista vazia para alocar a estrutura de dados na memória RAM ===
+    data_segments = []
     
     # Processamento abstrato e simulado oriundo do disco NVMe subjacente no servidor virtual
     try:
@@ -60,5 +62,5 @@ def orchestrate_distributed_zstd_pipeline(mock_file_path):
     return compressed_results
 
 if __name__ == "__main__":
-    # orchestrate_distributed_zstd_pipeline("massive_event_stream_log.json")
-    pass
+    # === CORREÇÃO: Descomentado para ativar efetivamente o pipeline durante a execução ===
+    orchestrate_distributed_zstd_pipeline("massive_event_stream_log.json")
