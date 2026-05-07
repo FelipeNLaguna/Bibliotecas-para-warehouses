@@ -48,9 +48,20 @@ def secure_rpc_payload_simulation(payloads):
         
     for result in encrypted_results:
          # Cada segmento do log representa as transações seguras a fluir no Data Center
-         print(f"Fragmento RPC {result['index']} protegido: Nonce gerado [{result['nonce'].hex()}] -> Texto Cifrado com Tag de Autenticidade.")
-         
+         # Limitado aqui a imprimir apenas os primeiros 10 para não poluir o terminal
+         if result['index'] < 10:
+             print(f"Fragmento RPC {result['index']} protegido: Nonce gerado [{result['nonce'].hex()}] -> Texto Cifrado com Tag de Autenticidade.")
+    print(f"... e mais {len(encrypted_results) - 10} fragmentos processados com sucesso.")
+
 if __name__ == "__main__":
-    # Simulação da ingestão de payloads sensíveis que necessitam transferência inviolável
-    large_payloads =
-    # secure_rpc_payload_simulation(large_payloads)
+    # === CORREÇÃO: Geração de pacotes de bytes simulando transações financeiras/logs ===
+    # Multiplicamos a lista para gerar 100 pacotes e exigir paralelismo real
+    large_payloads = [
+        b'{"req_id": "A1", "action": "auth_token_refresh", "user": "admin"}',
+        b'{"req_id": "B2", "action": "db_query", "table": "financial_records"}',
+        b'{"req_id": "C3", "action": "transfer_funds", "amount": "50000.00"}',
+        b'{"req_id": "D4", "action": "heartbeat_ping", "status": "active"}'
+    ] * 25
+    
+    # === CORREÇÃO: Descomentado para ativar a orquestração ===
+    secure_rpc_payload_simulation(large_payloads)
