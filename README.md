@@ -10,5 +10,5 @@ Compressäo de dados sem perda - multiprocessing e Zstandard/zstd
 Detecção de Fraude em tempo real(Stream processing) - Apache Flink(Pyflink)  
 Transformações massivas em pipeline ETL - Apache Spark   
 Window Functions - Apache Spark ou Polars  
-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+===========================================================================================================================================================================================
 Os códigos do repositório foram gerados pelo Gemini.
